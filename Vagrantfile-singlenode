@@ -1,0 +1,48 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+BASE 		    = "ubuntu/trusty64"
+INIT_SCRIPT 	= "provision/provision-ubuntu-14.04.sh"
+ANSIBLE_SCRIPT	= "provision/ansible-runtime.sh"
+SERVER_IP       = ""
+SERVER_CPU      = "1"
+SERVER_MEM      = "1024"
+SERVER_PORT     = "80"
+LOCAL_PORT      = "8000"
+SERVER_SHARE    = "/share"  # @todo
+LOCAL_SHARE     = "share"   # @todo
+HOSTNAME 	    = "ubuntu"
+DOMAIN          = ""
+TIMEZONE	    = "UTC"     # @todo
+
+server_swap	= "768" # Options: false | int (MB) - Guideline: Between one or two times the server_memory
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = BASE
+  config.vm.hostname = HOSTNAME + '.' + DOMAIN
+
+  config.vm.network :private_network, ip: SERVER_IP
+  config.vm.network :forwarded_port, guest: SERVER_PORT, host: LOCAL_PORT
+
+  config.vm.synced_folder LOCAL_SHARE, SERVER_SHARE
+
+  config.vm.box_check_update = false
+  # config.vm.network "public_network"
+  # config.vm.synced_folder "../data", "/vagrant_data"
+
+  config.vm.provider "virtualbox" do |vb|
+     vb.customize ["modifyvm", :id, "--memory", SERVER_MEM]
+     vb.customize ["modifyvm", :id, "--cpuexecutioncap", "50", "--cpus", SERVER_CPU ]
+     vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+     vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+  end
+
+  config.vm.provision :shell, :path => INIT_SCRIPT
+  config.vm.provision :shell, :path => ANSIBLE_SCRIPT
+
+  # config.vm.provision "puppet" do |puppet|
+  #   puppet.manifests_path = "manifests"
+  #   puppet.manifest_file  = "site.pp"
+  # end
+end

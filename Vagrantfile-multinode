@@ -1,0 +1,58 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+NODES = [
+  { :HOSTNAME => "box1", :IP => "10.90.0.10", :MEM => "1024", :PORT => "80", :LOCAL => "8001", :SCRIPT =>
+"vm_provision/ansible-runtime-web.sh" },
+  { :HOSTNAME => "box2", :IP => "10.90.0.11", :MEM => "1536", :PORT => "5432", :LOCAL => "5433", :SCRIPT =>
+"vm_provision/ansible-runtime-db.sh" },
+]
+
+INIT_SCRIPT 	= "provision/provision-ubuntu-14.04.sh"
+ANSIBLE_SCRIPT	= "provision/ansible-runtime.sh"
+SERVER_CPU      = "1"
+DOMAIN          = ""
+
+BASE 		    = "ubuntu/trusty64"
+SERVER_SHARE    = "/share"  # @todo
+LOCAL_SHARE     = "share"   # @todo
+TIMEZONE	    = "UTC"     # @todo
+
+server_swap	= "768" # Options: false | int (MB) - Guideline: Between one or two times the server_memory
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  NODES.each do |node|
+    config.vm.define node[:HOSTNAME] do |node_config|
+        node_config.vm.box = BASE
+        node_config.vm.host_name = node[:HOSTNAME] + '.' + DOMAIN
+        node_config.vm.network :private_network, ip: node[:IP]
+        node_config.vm.network :forwarded_port, guest: node[:PORT], host: node[LOCAL_PORT]
+
+        memory = node[:MEM] ? node[:MEM] : 512;
+
+        node_config.vm.customize [
+            'modifyvm', :id,
+            '--memory', node[:MEM],
+            '--cpuexecutioncap', SERVER_CPU,
+            '--natdnshostresolver1', "on",
+            '--natdnsproxy1', "on"
+        ]
+
+        node_config.vm.provision :sheel, :path => INIT_SCRIPT
+        node_config.vm.provision :sheel, :path => node[:SCRIPT]
+    end
+  end
+
+  config.vm.box_check_update = false
+  # config.vm.network "public_network"
+  # config.vm.synced_folder "../data", "/vagrant_data"
+
+  # config.vm.provision "puppet" do |puppet|
+  #   puppet.manifests_path = "puppet/manifests"
+  #   puppet.manifest_file  = "site.pp"
+  #   puppet.module_path = "puppet/modules"
+  # end
+end
