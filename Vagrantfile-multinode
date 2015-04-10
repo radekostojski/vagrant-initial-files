@@ -4,10 +4,10 @@
 VAGRANTFILE_API_VERSION = "2"
 
 NODES = [
-  { :HOSTNAME => "box1", :IP => "10.90.0.10", :MEM => "1024", :PORT => "80", :LOCAL => "8001", :SCRIPT =>
-"vm_provision/ansible-runtime-web.sh" },
-  { :HOSTNAME => "box2", :IP => "10.90.0.11", :MEM => "1536", :PORT => "5432", :LOCAL => "5433", :SCRIPT =>
-"vm_provision/ansible-runtime-db.sh" },
+  { :HOSTNAME => "web", :IP => "10.90.0.10", :MEM => "1024", :PORT => "80", :LOCAL => "8001", :SCRIPT =>
+"provision/ansible-runtime-web.sh" },
+  { :HOSTNAME => "db", :IP => "10.90.0.11", :MEM => "1536", :PORT => "5432", :LOCAL => "5433", :SCRIPT =>
+"provision/ansible-runtime-db.sh" },
 ]
 
 INIT_SCRIPT 	= "provision/provision-ubuntu-14.04.sh"
@@ -33,16 +33,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
         memory = node[:MEM] ? node[:MEM] : 512;
 
-        node_config.vm.customize [
-            'modifyvm', :id,
-            '--memory', node[:MEM],
-            '--cpuexecutioncap', SERVER_CPU,
-            '--natdnshostresolver1', "on",
-            '--natdnsproxy1', "on"
-        ]
+#   @todo: to be fixed
+#        node_config.vm.customize [
+#            'modifyvm', :id,
+#            '--memory', node[:MEM],
+#            '--cpuexecutioncap', SERVER_CPU,
+#            '--natdnshostresolver1', "on",
+#            '--natdnsproxy1', "on"
+#        ]
 
-        node_config.vm.provision :sheel, :path => INIT_SCRIPT
-        node_config.vm.provision :sheel, :path => node[:SCRIPT]
+        node_config.vm.provision :shell, :path => INIT_SCRIPT
+        node_config.vm.provision :shell, :path => node[:SCRIPT]
     end
   end
 
