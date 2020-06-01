@@ -2,19 +2,17 @@
 # vi: set ft=ruby :
 
 VAGRANTFILE_API_VERSION = "2"
-BASE 		    = "ubuntu/trusty64"
+BASE 	        = "ubuntu/xenial64"
 INIT_SCRIPT 	= "provision/provision-ubuntu-14.04.sh"
-ANSIBLE_SCRIPT	= "provision/ansible-runtime.sh"
 SERVER_IP       = ""
 SERVER_CPU      = "1"
 SERVER_MEM      = "1024"
 SERVER_PORT     = "80"
 LOCAL_PORT      = "8000"
-SERVER_SHARE    = "/share"  # @todo
-LOCAL_SHARE     = "share"   # @todo
-HOSTNAME 	    = "ubuntu"
-DOMAIN          = ""
-TIMEZONE	    = "UTC"     # @todo
+SERVER_SHARE    = "/share"  
+LOCAL_SHARE     = "share" 
+HOSTNAME        = "ubuntu"
+DOMAIN          = "radek.lol"
 
 server_swap	= "768" # Options: false | int (MB) - Guideline: Between one or two times the server_memory
 
@@ -28,8 +26,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.synced_folder LOCAL_SHARE, SERVER_SHARE
 
   config.vm.box_check_update = false
-  # config.vm.network "public_network"
-  # config.vm.synced_folder "../data", "/vagrant_data"
 
   config.vm.provider "virtualbox" do |vb|
      vb.customize ["modifyvm", :id, "--memory", SERVER_MEM]
@@ -41,8 +37,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision :shell, :path => INIT_SCRIPT
   config.vm.provision :shell, :path => ANSIBLE_SCRIPT
 
-  # config.vm.provision "puppet" do |puppet|
-  #   puppet.manifests_path = "manifests"
-  #   puppet.manifest_file  = "site.pp"
-  # end
+  config.vm.provision "shell" do |s|
+    ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
+    s.inline = <<-SHELL
+      echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys
+    SHELL
+  end
+  config.vm.provision "ansible" do |ansible|
+    ansible.extra_vars = {
+      target: "all",
+      env: "dev"
+    }
+    ansible.playbook = "vagrant.yaml"
+    ansible.sudo = true
+  end
 end
